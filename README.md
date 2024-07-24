@@ -1,85 +1,98 @@
 
-# Clash Royale Battle Data Analysis
+# Clash Royale Data Analysis
 
-This project aims to store and analyze battle data from the real-time strategy game Clash Royale using a NoSQL database. The data analysis will help balance the game based on win/loss statistics associated with card usage.
+This project aims to store and analyze battle data from the game Clash Royale in a NoSQL database (MongoDB Atlas) to facilitate analytical queries that allow the analysis of victory/defeat statistics associated with the use of cards, with the goal of balancing the game.
 
-## Table of Contents
-- [Project Overview](#project-overview)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Queries](#queries)
-- [Running the Web Application](#running-the-web-application)
-- [License](#license)
+## Project Setup
 
-## Project Overview
-The goal of this project is to store battle data in a NoSQL database and perform analytical queries to balance the game based on the win/loss statistics of cards used in battles.
+### Prerequisites
 
-## Features
-- Fetch player and battle data from Clash Royale API.
-- Store data in a MongoDB database.
-- Perform analytical queries to generate insights.
-- Web application to visualize the results.
-
-## Requirements
-- Python 3.12
+- Python 3.10
 - Anaconda
-- MongoDB (local or MongoDB Atlas)
+- MongoDB Atlas account
+- Clash Royale API access
 
-## Installation
+### Setup Instructions
 
-### 1. Clone the Repository
-\`\`\`bash
-git clone https://github.com/yourusername/clash-royale-analysis.git
-cd clash-royale-analysis
-\`\`\`
+1. **Clone the repository:**
+    ```bash
+    git clone <repository_url>
+    cd <repository_directory>
+    ```
 
-### 2. Create and Activate Conda Environment
-\`\`\`bash
-conda create --name clash-royale-312 python=3.12
-conda activate clash-royale-312
-\`\`\`
+2. **Create a virtual environment using Anaconda:**
+    ```bash
+    conda create --name clash-royale python=3.10
+    conda activate clash-royale
+    ```
 
-### 3. Install Dependencies
-\`\`\`bash
-pip install -r requirements.txt
-\`\`\`
+3. **Install the required packages:**
+    ```bash
+    pip install pymongo flask python-dotenv
+    ```
 
-### 4. Configure MongoDB
-- Ensure MongoDB is installed and running locally or configure MongoDB Atlas.
-- Create a database named \`clash_royale\`.
+4. **Set up environment variables:**
+    - Create a `.env` file in the root of your project directory and add your MongoDB URI:
+    ```plaintext
+    MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/clash_royale?retryWrites=true&w=majority
+    ```
 
-## Usage
+5. **Run the Flask application:**
+    ```bash
+    python app.py
+    ```
 
-### 1. Collect Data
-Edit \`collect_data.py\` to include your Clash Royale API key and player tag.
-Run the script to collect player and battle data and store it in MongoDB.
+6. **Access the application:**
+    - Open your web browser and go to `http://localhost:5000` to access the interface.
 
-\`\`\`bash
-python collect_data.py
-\`\`\`
+## Project Structure
 
-### 2. Perform Queries
-Use the \`queries.py\` script to run predefined analytical queries.
+- `app.py`: Main application file containing the Flask routes and functions to handle the queries.
+- `collect_data.py`: Script to collect data from the Clash Royale API and store it in MongoDB Atlas.
+- `templates/`: Directory containing the HTML templates for the Flask application.
+  - `index.html`: Main page with forms to submit queries.
+  - `results.html`: Page to display the results of the queries.
+- `.env`: File containing environment variables (not included in the repository).
 
-### 3. Running the Web Application
-Run the Flask web application to visualize the results.
+## Queries Implemented
 
-\`\`\`bash
-python app.py
-\`\`\`
+1. **Victory and Defeat Percentage Using Card:**
+   - Calculates the percentage of victories and defeats using a specified card within a given time interval.
+   - Parameters: card name, start date, end date.
 
-Visit \`http://127.0.0.1:5000/dashboard/\` to view the dashboard.
+2. **Decks with High Win Percentage:**
+   - Lists decks that produced more than a specified percentage of victories within a given time interval.
+   - Parameters: minimum win percentage, start date, end date.
 
-## Queries
-Here are some example queries you can perform:
+3. **Defeats Using Card Combo:**
+   - Calculates the number of defeats using a specified combo of cards within a given time interval.
+   - Parameters: card combo (comma-separated), start date, end date.
 
-1. Calculate the percentage of wins and losses using a specific card.
-2. List complete decks that produced more than a specified percentage of wins.
-3. Calculate the number of losses using specific card combos.
-4. Calculate the number of wins involving a specific card under certain conditions.
-5. List card combos that produced more than a specified percentage of wins.
+4. **Specific Victory Conditions:**
+   - Calculates the number of victories involving a specified card under specific conditions: the winner has a lower percentage of trophies than the loser, the match lasted less than 2 minutes, and the loser destroyed at least two towers.
+   - Parameters: card name, trophy difference percentage, start date, end date.
+
+5. **Card Combos with High Win Percentage:**
+   - Lists card combos of a specified size that produced more than a specified percentage of victories within a given time interval.
+   - Parameters: combo size, minimum win percentage, start date, end date.
+
+## Example Usage
+
+1. **Start the application:**
+    ```bash
+    python app.py
+    ```
+
+2. **Open the web interface:**
+    - Navigate to `http://localhost:5000` in your web browser.
+
+3. **Submit queries:**
+    - Fill in the forms on the main page with the appropriate parameters and submit to view the results.
+
+## Author
+
+- Pedro Natanael
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+This project is licensed under the MIT License.
