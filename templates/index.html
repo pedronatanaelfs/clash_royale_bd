@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Royale Analysis</title>
+</head>
+<body>
+    <h1>Clash Royale Analysis</h1>
+    
+    <h2>Query 1: Victory and Defeat Percentage Using Card</h2>
+    <form action="/victory_percentage" method="post">
+        <label for="card_name">Card Name:</label>
+        <select id="card_name" name="card_name" required>
+            {% for card_name in card_names %}
+            <option value="{{ card_name }}">{{ card_name }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="start_time">Start Date:</label>
+        <select id="start_time" name="start_time" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="end_time">End Date:</label>
+        <select id="end_time" name="end_time" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    
+    <h2>Query 2: Decks with High Win Percentage</h2>
+    <form action="/high_win_decks" method="post">
+        <label for="win_percentage">Minimum Win Percentage:</label>
+        <input type="number" id="win_percentage" name="win_percentage" required>
+        <br>
+        <label for="start_time_deck">Start Date:</label>
+        <select id="start_time_deck" name="start_time_deck" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="end_time_deck">End Date:</label>
+        <select id="end_time_deck" name="end_time_deck" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    
+    <h2>Query 3: Defeats Using Card Combo</h2>
+    <form action="/defeats_with_combo" method="post">
+        <label for="combo">Card Combo (comma separated):</label>
+        <input type="text" id="combo" name="combo" required>
+        <br>
+        <label for="start_time_combo">Start Date:</label>
+        <select id="start_time_combo" name="start_time_combo" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="end_time_combo">End Date:</label>
+        <select id="end_time_combo" name="end_time_combo" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    
+    <h2>Query 4: Specific Victory Conditions</h2>
+    <form action="/specific_victories" method="post">
+        <label for="card_name_victory">Card Name:</label>
+        <select id="card_name_victory" name="card_name_victory" required>
+            {% for card_name in card_names %}
+            <option value="{{ card_name }}">{{ card_name }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="trophy_diff">Trophy Difference Percentage:</label>
+        <input type="number" id="trophy_diff" name="trophy_diff" required>
+        <br>
+        <label for="start_time_victory">Start Date:</label>
+        <select id="start_time_victory" name="start_time_victory" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="end_time_victory">End Date:</label>
+        <select id="end_time_victory" name="end_time_victory" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    
+    <h2>Query 5: Card Combos with High Win Percentage</h2>
+    <form action="/high_win_combos" method="post">
+        <label for="combo_size">Combo Size:</label>
+        <input type="number" id="combo_size" name="combo_size" required>
+        <br>
+        <label for="win_percentage_combo">Minimum Win Percentage:</label>
+        <input type="number" id="win_percentage_combo" name="win_percentage_combo" required>
+        <br>
+        <label for="start_time_combo">Start Date:</label>
+        <select id="start_time_combo" name="start_time_combo" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="end_time_combo">End Date:</label>
+        <select id="end_time_combo" name="end_time_combo" required>
+            {% for battle_date in battle_dates %}
+            <option value="{{ battle_date }}">{{ battle_date }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    
+</body>
+</html>

@@ -1,0 +1,7 @@
+requests==2.32
+Flask==3.0
+dash==2.17
+plotly==5.23
+pymongo[srv]
+python-dotenv
+matplotlib
