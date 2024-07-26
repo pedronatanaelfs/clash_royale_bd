@@ -48,13 +48,25 @@ def victory_percentage_with_card(card_name, start_time, end_time):
             "team.cards.name": card_name
         }},
         {"$group": {
-            "_id": "$result",
-            "count": {"$sum": 1}
+            "_id": "battleGroup",
+            "totalMatches": {"$sum": 1},
+            "totalWinsWithCardX": 
+                { "$sum": { "$cond": [{ "$eq": [ "$result", "win"]}, 1, 0 ]}},
+            "totalWinsLossesCardX": 
+                {"$sum": {"$cond": [{ "$eq": [ "$result", "lose" ]}, 1, 0 ]}}
         }},
         {"$project": {
             "_id": 0,
-            "result": "$_id",
-            "count": 1
+            "winPercentage": {
+                "$multiply": [
+                    {"$divide": [ "$totalWinsWithCardX", "$totalMatches"]},
+                    100]
+            },
+            "losePercentage": {
+                "$multiply": [
+                    {"$divide": ["$totalWinsLossesCardX", "$totalMatches"]},
+                    100 ]
+            }
         }}
     ]
     
@@ -62,14 +74,6 @@ def victory_percentage_with_card(card_name, start_time, end_time):
     
     results = list(DB['battles'].aggregate(pipeline))
     logging.debug(f"Pipeline results: {results}")
-    
-    total_battles = sum(result['count'] for result in results)
-    logging.debug(f"Total battles: {total_battles}")
-    
-    for result in results:
-        result['percentage'] = (result['count'] / total_battles) * 100 if total_battles > 0 else 0
-    logging.debug(f"Final results with percentage: {results}")
-    
     return results
 
 @app.route('/high_win_decks', methods=['POST'])
