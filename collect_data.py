@@ -21,9 +21,9 @@ DB_NAME = 'clash_royale'
 CLIENT = pymongo.MongoClient(MONGO_URI)
 DB = CLIENT[DB_NAME]
 
-def get_clans():
+def get_clan(clan_name):
     logging.debug("Fetching clans...")
-    url = f'{BASE_URL}/clans?name=royale&minMembers=10&minScore=2000&limit=10'
+    url = f'{BASE_URL}/clans?name={clan_name}&minMembers=10&limit=10'
     response = requests.get(url, headers=HEADERS)
     if response.status_code == 200:
         clans = response.json().get('items', [])
@@ -73,7 +73,7 @@ def save_player_data(player_data):
             'losses': player_data['losses'],
             'battleCount': player_data['battleCount'],
             'threeCrownWins': player_data['threeCrownWins'],
-            'cards': player_data['cards']
+            'deck': player_data['currentDeck']
         }
         collection.update_one({'tag': player_data['tag']}, {'$set': player_record}, upsert=True)
         logging.debug(f"Saved data for player {player_data['tag']}.")
@@ -95,39 +95,72 @@ def save_battle_logs(battle_logs, player_tag):
     logging.debug(f"Saving battle logs for player {player_tag}...")
     collection = DB['battles']
     for log in battle_logs:
+        winner = {}
+        loser = {}
+        if log['team'][0]['crowns'] > log['opponent'][0]['crowns']: 
+            winner = log['team'][0]
+            loser = log['opponent'][0]
+        else: 
+            winner = log['opponent'][0]
+            loser = log['team'][0]
         battle_record = {
             'battleTime': log['battleTime'],
-            'team': log['team'],
-            'opponent': log['opponent'],
-            'arena': log['arena'],
-            'gameMode': log['gameMode'],
-            'type': log['type'],
-            'result': 'win' if log['team'][0]['crowns'] > log['opponent'][0]['crowns'] else 'lose',
-            'teamCrowns': log['team'][0]['crowns'],
-            'opponentCrowns': log['opponent'][0]['crowns'],
-            'playerTag': player_tag
+            'winner': {
+                "tag": winner['tag'],
+                "name": winner['name'],
+                "deck": winner['cards'],
+                "crowns": winner['crowns'],
+            },
+            'loser': {
+                "tag": loser['tag'],
+                "name": loser['name'],
+                "deck": loser['cards'],
+                "crowns": loser['crowns'],
+            },
         }
         collection.update_one({'battleTime': log['battleTime'], 'playerTag': player_tag}, {'$set': battle_record}, upsert=True)
     logging.debug(f"Saved battle logs for player {player_tag}.")
 
 if __name__ == '__main__':
     logging.debug("Starting data collection process...")
-    
-    clans = get_clans()
-    player_tags = []
 
-    for clan in clans:
-        clan_tag = clan['tag']
-        members = get_clan_members(clan_tag)
-        for member in members:
-            player_tags.append(member['tag'])
+    clans = [
+        'WHAM! RO',
+        # 'La Eza',
+        # 'SAF GÜÇ',
+        # 'おと姫',
+        # 'Tigers BR',
+        # 'Nova I',
+        # 'INTZ',
+        # 'Nova EG',
+        # 'Chinese eSports',
+        # 'Kings',
+    ]
+
     
-    logging.debug(f"Collected {len(player_tags)} player tags.")
-    
-    for player_tag in player_tags:
-        player_data = get_player_data(player_tag)
-        save_player_data(player_data)
-        battle_logs = get_battle_logs(player_tag)
-        save_battle_logs(battle_logs, player_tag)
+    # players = DB['players']
+    # players.delete_many({})
+    # battles = DB['battles']
+    # battles.delete_many({})
+
+   
+
+    for clanName in clans:
+        logging.debug(f"----------- Clan {clanName} -----------------")
+        clan = get_clan(clanName)
+        player_tags = []
+        for atributte in clan:
+            clan_tag = atributte['tag']
+            members = get_clan_members(clan_tag)
+            for member in members:
+                player_tags.append(member['tag'])
+        
+        logging.debug(f"Collected {len(player_tags)} player tags.")
+        
+        for player_tag in player_tags:
+            player_data = get_player_data(player_tag)
+            save_player_data(player_data)
+            battle_logs = get_battle_logs(player_tag)
+            save_battle_logs(battle_logs, player_tag)
     
     logging.debug("Data collection process completed.")
