@@ -5,6 +5,7 @@ import logging
 from dotenv import load_dotenv
 from urllib.parse import quote
 from datetime import datetime
+from json2html import *
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -35,7 +36,8 @@ def victory_percentage():
     end_time = request.form["end_time"]
     results = victory_percentage_with_card(card_name, start_time, end_time)
     logging.debug(f"Results: {results}")
-    return render_template("results.html", results=results)
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
 
 
 def victory_percentage_with_card(card_name, start_time, end_time):
@@ -68,6 +70,7 @@ def victory_percentage_with_card(card_name, start_time, end_time):
         # Calcula as porcentagens de vitorias e derrotas.
         {
             "$project": {
+                "_id": 0,
                 "winPercentage": {
                     "$multiply": [
                         {
@@ -107,7 +110,8 @@ def high_win_decks():
     end_time = request.form["end_time_deck"]
     results = decks_with_high_win_percentage(win_percentage, start_time, end_time)
     logging.debug(f"Results: {results}")
-    return render_template("results.html", results=results)
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
 
 
 def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
@@ -161,8 +165,8 @@ def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
         # repassa o total de vitórias e de jogos.
         {
             "$project": {
-                "totalWins": 1,
-                "totalGames": {"$arrayElemAt": ["$gameStats.totalGames", 0]},
+                "_id": 0,
+                "deck": "$_id",
                 "winPercentage": {
                     "$multiply": [
                         {
@@ -199,7 +203,8 @@ def defeats_with_combo():
     end_time = request.form["end_time_combo"]
     results = losses_with_card_combo(combo, start_time, end_time)
     logging.debug(f"Results: {results}")
-    return render_template("results.html", results=results)
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
 
 
 def losses_with_card_combo(card_combo, start_time, end_time):
@@ -247,7 +252,8 @@ def specific_victories():
     end_time = request.form["end_time_victory"]
     results = specific_victory_conditions(card_name, trophy_diff, start_time, end_time)
     logging.debug(f"Results: {results}")
-    return render_template("results.html", results=results)
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
 
 
 def specific_victory_conditions(
@@ -352,7 +358,8 @@ def high_win_combos():
         combo_size, win_percentage, start_time, end_time
     )
     logging.debug(f"Results: {results}")
-    return render_template("results.html", results=results)
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
 
 
 def card_combos_with_high_win_percentage(
@@ -404,7 +411,8 @@ def card_combos_with_high_win_percentage(
         # Calcula a taxa de ganho do combo em relacao ao total de batalhas
         {
             "$project": {
-                "_id": "$_id",
+                "_id": 0,
+                "combo": "$_id",
                 "winRate": {
                     "$multiply": [
                         {
@@ -460,7 +468,8 @@ def get_battle_dates():
             )
         )
         logging.debug(f"Battle dates: {battle_dates}")
-        return battle_dates
+
+        return [battle_dates[0], battle_dates[len(battle_dates) - 1]]
     except Exception as err:
         logging.error(f"An error occurred while fetching battle dates: {err}")
         return []
