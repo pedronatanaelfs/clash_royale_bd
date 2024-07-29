@@ -1,37 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='result.css') }}" />
     <title>Results</title>
 </head>
+
 <body>
     <h1 class="resultTitle">Results</h1>
     {% if results %}
     <div class="resultContainer">
-        <table>
-            <thead>
-                <tr>
-                    <th>Key</th>
-                    <th>Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for result in results %}
-                <tr>
-                    {% for key, value in result.items() %}
-                    <td>{{ key }}</td>
-                    <td>{{ value }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div id="content">
+            {{results | safe}}
+        </div>
         {% else %}
         <p class="subtitleTitle">No results found for the given criteria.</p>
         {% endif %}
     </div>
-    
 </body>
+
 </html>
