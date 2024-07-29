@@ -468,7 +468,8 @@ def get_battle_dates():
             )
         )
         logging.debug(f"Battle dates: {battle_dates}")
-        return battle_dates
+
+        return [battle_dates[0], battle_dates[len(battle_dates) - 1]]
     except Exception as err:
         logging.error(f"An error occurred while fetching battle dates: {err}")
         return []

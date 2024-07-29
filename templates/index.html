@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clash Royale Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" />
 </head>
+
 <body>
     <h1 class="projectTitle">Clash Royale Analysis</h1>
     <form action="/victory_percentage" method="post">
         <h2 class="queryTitle">Query 1: Victory and Defeat Percentage Using Card</h2>
         <hr class="divider">
-       
+
         <div class="component-container">
             <label class="componentTitle" for="card_name">Card Name:</label>
 
@@ -20,28 +22,19 @@
                 <option value="{{ card_name }}">{{ card_name }}</option>
                 {% endfor %}
             </select>
-            
-            <label for="start_time" class="componentTitle">Start Date:</label>
 
-            <select id="start_time"  class="selectBox" name="start_time" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
+            <label for="start_time" class="componentTitle">Start Date:</label>
+            <input type="date" id="start_time" class="selectBox" name="start_time" value="{{battle_dates[0]}}" required>
 
             <label for="end_time" class="componentTitle">End Date:</label>
+            <input type="date" id="end_time" class="selectBox" value="{{battle_dates[1]}}" name="end_time" required>
 
-            <select id="end_time" class="selectBox" name="end_time" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
             </div>
         </div>
     </form>
-    
+
     <form action="/high_win_decks" method="post">
         <div class="queryTitle">Query 2: Decks with High Win Percentage</div>
         <hr class="divider">
@@ -49,56 +42,51 @@
         <div class="component-container">
             <label for="win_percentage" class="componentTitle">Minimum Win Percentage:</label>
             <input type="number" class="selectBox" id="win_percentage" name="win_percentage" required>
-        
+
+
+
+
+            <label for="end_time" class="componentTitle">End Date:</label>
+
+
             <label for="start_time_deck" class="componentTitle">Start Date:</label>
-            <select id="start_time_deck" class="selectBox" name="start_time_deck" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
+            <input type="date" id="start_time_deck" class="selectBox" name="start_time_deck" required
+                value="{{battle_dates[0]}}">
+
 
             <label for="end_time_deck" class="componentTitle">End Date:</label>
-            <select id="end_time_deck" class="selectBox" name="end_time_deck" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
+            <input type="date" id="end_time_deck" class="selectBox" name="end_time_deck" required
+                value="{{battle_dates[1]}}">
 
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
             </div>
         </div>
     </form>
-    
+
 
     <form action="/defeats_with_combo" method="post">
         <h2 class="queryTitle">Query 3: Defeats Using Card Combo</h2>
         <hr class="divider">
 
         <div class="component-container">
-            <label for="combo"class="componentTitle" >Card Combo (comma separated):</label>
-            <input type="text"class="selectBox"  id="combo" name="combo" required>
+            <label for="combo" class="componentTitle">Card Combo (comma separated):</label>
+            <input type="text" class="selectBox" id="combo" name="combo" required>
 
             <label for="start_time_combo" class="componentTitle">Start Date:</label>
-            <select id="start_time_combo" class="selectBox" name="start_time_combo" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
+            <input type="date" id="start_time_combo" class="selectBox" name="start_time_combo" required
+                value="{{battle_dates[0]}}">
 
             <label for="end_time_combo" class="componentTitle">End Date:</label>
-            <select id="end_time_combo" class="selectBox" name="end_time_combo" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
+            <input type="date" id="end_time_combo" class="selectBox" name="end_time_combo" required
+                value="{{battle_dates[1]}}">
 
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
             </div>
         </div>
     </form>
-    
+
     <form action="/specific_victories" method="post">
         <h2 class="queryTitle">Query 4: Specific Victory Conditions</h2>
         <hr class="divider">
@@ -109,61 +97,43 @@
                 {% for card_name in card_names %}
                 <option value="{{ card_name }}">{{ card_name }}</option>
                 {% endfor %}
-            </select>''
+            </select>
 
             <label for="trophy_diff" class="componentTitle">Trophy Difference Percentage:</label>
-            <input type="number" class="selectBox"   id="trophy_diff" name="trophy_diff" required>
-
-            <label for="start_time_victory" class="componentTitle">Start Date:</label>
-            <select id="start_time_victory" class="selectBox" nam name="start_time_victory" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="end_time_victory" class="componentTitle">End Date:</label>
-            <select id="end_time_victory" class="selectBox" nam name="end_time_victory" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
+            <input type="number" class="selectBox" id="trophy_diff" name="trophy_diff" required>
 
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
             </div>
         </div>
     </form>
-    
-    
+
+
     <form action="/high_win_combos" method="post">
         <h2 class="queryTitle">Query 5: Card Combos with High Win Percentage</h2>
         <hr class="divider">
 
         <div class="component-container">
             <label for="combo_size" class="componentTitle">Combo Size:</label>
-            <input type="number"  class="selectBox" id="combo_size" name="combo_size" required>
-        
+            <input type="number" class="selectBox" id="combo_size" name="combo_size" required>
+
             <label for="win_percentage_combo" class="componentTitle">Minimum Win Percentage:</label>
             <input type="number" class="selectBox" id="win_percentage_combo" name="win_percentage_combo" required>
-        
+
             <label for="start_time_combo" class="componentTitle">Start Date:</label>
-            <select id="start_time_combo" class="selectBox" name="start_time_combo" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
-        
+            <input type="date" id="start_time_combo" class="selectBox" name="start_time_combo" required
+                value="{{battle_dates[0]}}">
+
+
             <label for="end_time_combo" class="componentTitle">End Date:</label>
-            <select id="end_time_combo" class="selectBox" name="end_time_combo" required>
-                {% for battle_date in battle_dates %}
-                <option value="{{ battle_date }}">{{ battle_date }}</option>
-                {% endfor %}
-            </select>
-        
+            <input type="date" id="end_time_combo" class="selectBox" name="end_time_combo" required
+                value="{{battle_dates[1]}}">
+
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
             </div>
         </div>
     </form>
 </body>
+
 </html>
