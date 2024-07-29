@@ -50,7 +50,7 @@ def victory_percentage_with_card(card_name, start_time, end_time):
     pipeline = [
         # Filtra pelo periodo da batalha
         {"$match": {"battleTime": {"$gte": start_iso, "$lt": end_iso}}},
-        # Cria campos booleanos informando em qual londo a carta esta presente
+        # Cria campos booleanos informando em qual lado a carta esta presente
         {
             "$project": {
                 "winnerHasCard": {"$in": [card_name, "$winner.deck.name"]},
@@ -119,13 +119,18 @@ def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
     end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
 
     pipeline = [
+        # Filtra pelo periodo da batalha
         {
             "$match": {
                 "battleTime": {"$gte": start_iso, "$lt": end_iso},
             },
         },
+        # Extrai o deck do vencedor e marca cada entrada como uma vitoria
         {"$project": {"winnerDeck": "$winner.deck.name", "isWin": {"$literal": 1}}},
+        # Agrupa os documentos pelo deck do vencedor e conta as vitórias para cada deck
         {"$group": {"_id": "$winnerDeck", "totalWins": {"$sum": "$isWin"}}},
+        # Join na colecao original para contar quantas vezes cada deck
+        # apareceu em uma partida dentro do intervalo, seja como vencedor ou perdedor.
         {
             "$lookup": {
                 "from": "battles",
@@ -152,6 +157,8 @@ def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
                 "as": "gameStats",
             }
         },
+        # Calcula a porcentagem total de vitórias para cada deck e
+        # repassa o total de vitórias e de jogos.
         {
             "$project": {
                 "totalWins": 1,
@@ -174,7 +181,9 @@ def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
                 },
             }
         },
+        # Filtra os decks que tem uma taxa de vitoria superior ao limite informado
         {"$match": {"winPercentage": {"$gt": min_win_percentage}}},
+        # Ordena os decks na ordem decrescente de vitoria
         {"$sort": {"winPercentage": -1}},
     ]
 
@@ -204,7 +213,8 @@ def losses_with_card_combo(card_combo, start_time, end_time):
     pipeline = [
         # Filtra pelo periodo da batalha
         {"$match": {"battleTime": {"$gte": start_iso, "$lt": end_iso}}},
-        # Cria um novo campo que informa se elementos do combo estão no deck do perdedor ou nao
+        # Cria um novo campo que informa se elementos do combo
+        # estão no deck do perdedor ou nao
         {
             "$project": {
                 "hasCombo": {
@@ -251,28 +261,80 @@ def specific_victory_conditions(
     end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
 
     pipeline = [
+        # Filtra batalhas on o perdedor derrubou, no minimo, 2 torres
+        {"$match": {"loser.crowns": {"$gte": 2}}},
+        # Busca dados de ambos vencedores e perdedores
         {
-            "$match": {
-                "battleTime": {"$gte": start_iso, "$lt": end_iso},
-                "team.cards.name": card_name,
-                "opponentCrowns": {"$gte": 2},
-                "team.trophies": {
-                    "$lt": {
-                        "$subtract": [
-                            "$opponent.trophies",
-                            {
-                                "$multiply": [
-                                    "$opponent.trophies",
-                                    trophy_difference_percentage / 100,
+            "$lookup": {
+                "from": "players",
+                "let": {"winner_tag": "$winner.tag", "loser_tag": "$loser.tag"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$or": [
+                                    {"$eq": ["$tag", "$$winner_tag"]},
+                                    {"$eq": ["$tag", "$$loser_tag"]},
                                 ]
-                            },
-                        ]
+                            }
+                        }
                     }
+                ],
+                "as": "player_info",
+            }
+        },
+        # Separa as informacoes do vencedor e do perdedor, que antes estavam combinados em player_info
+        {
+            "$addFields": {
+                "winner_info": {
+                    "$arrayElemAt": [
+                        {
+                            "$filter": {
+                                "input": "$player_info",
+                                "as": "info",
+                                "cond": {"$eq": ["$$info.tag", "$winner.tag"]},
+                            }
+                        },
+                        0,
+                    ]
+                },
+                "loser_info": {
+                    "$arrayElemAt": [
+                        {
+                            "$filter": {
+                                "input": "$player_info",
+                                "as": "info",
+                                "cond": {"$eq": ["$$info.tag", "$loser.tag"]},
+                            }
+                        },
+                        0,
+                    ]
                 },
             }
         },
-        {"$match": {"result": "win"}},
-        {"$count": "victories"},
+        # Projeta os campos que verificam se o deck do vencedor contem a carta desejada
+        # e se a diferença de trofeus satisfaz a condicao estabelecida.
+        {
+            "$project": {
+                "trophyDifference": {
+                    "$lt": [
+                        {"$divide": ["$winner_info.trophies", "$loser_info.trophies"]},
+                        {
+                            "$subtract": [
+                                1,
+                                {"$divide": [trophy_difference_percentage, 100]},
+                            ]
+                        },
+                    ]
+                },
+                "hasCardX": {"$in": [card_name, "$winner.deck.name"]},
+            }
+        },
+        # Filtra as batalhas onde o vencedor tem uma porcentagem a menos de trofeus do que o perdedor
+        # e utilizou a carta X.
+        {"$match": {"trophyDifference": True, "hasCardX": True}},
+        # Conta as vitorias que satisfazem os criterios
+        {"$count": "victoriesWithCardX"},
     ]
 
     results = list(DB["battles"].aggregate(pipeline))
@@ -317,7 +379,7 @@ def card_combos_with_high_win_percentage(
         # Cria um array de tamanho N referente ao combo de cartas
         {
             "$addFields": {
-                "cardCombos": {" $slice": ["$winnerCards", 0, combo_size]},
+                "cardCombos": {"$slice": ["$winnerCards", combo_size]},
             },
         },
         # Soma o total de jogos vitoriosos deste combo

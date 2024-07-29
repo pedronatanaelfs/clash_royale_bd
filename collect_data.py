@@ -63,20 +63,29 @@ def save_player_data(player_data):
     if player_data:
         logging.debug(f"Saving data for player {player_data["tag"]}...")
         collection = DB['players']
-        player_record = {
-            'tag': player_data['tag'],
-            'name': player_data['name'],
-            'expLevel': player_data['expLevel'],
-            'trophies': player_data['trophies'],
-            'bestTrophies': player_data['bestTrophies'],
-            'wins': player_data['wins'],
-            'losses': player_data['losses'],
-            'battleCount': player_data['battleCount'],
-            'threeCrownWins': player_data['threeCrownWins'],
-            'deck': player_data['currentDeck']
-        }
-        collection.update_one({'tag': player_data['tag']}, {'$set': player_record}, upsert=True)
-        logging.debug(f"Saved data for player {player_data['tag']}.")
+        player = list(collection.find({"tag": player_data["tag"]})),
+        saved = len(player[0]) != 0 
+      
+        if not saved:
+            player_record = {
+                'tag': player_data['tag'],
+                'name': player_data['name'],
+                'expLevel': player_data['expLevel'],
+                'trophies': player_data['trophies'],
+                'bestTrophies': player_data['bestTrophies'],
+                'wins': player_data['wins'],
+                'losses': player_data['losses'],
+                'battleCount': player_data['battleCount'],
+                'threeCrownWins': player_data['threeCrownWins'],
+                'deck': player_data['currentDeck']
+            }
+            result = collection.update_one({'tag': player_data['tag']}, {'$set': player_record}, upsert=True)
+            logging.debug(f"Saved data for player {player_data['tag']}.")
+            logging.debug(f"Player id is {result.upserted_id}.")
+            return result.upserted_id
+        else:
+            logging.debug(f"Player {player_data["tag"]} alrady exists.")
+            return player[0][0]["_id"]
 
 def get_battle_logs(player_tag):
     logging.debug(f"Fetching battle logs for player {player_tag}...")
@@ -91,10 +100,25 @@ def get_battle_logs(player_tag):
         logging.error(f"Failed to fetch battle logs for player {player_tag}: {response.status_code} - {response.text}")
         return []
 
-def save_battle_logs(battle_logs, player_tag):
+def save_battle_logs(battle_logs, player_tag, player_id):
     logging.debug(f"Saving battle logs for player {player_tag}...")
     collection = DB['battles']
+    playersCollection = DB["players"]
+    
     for log in battle_logs:
+        opponent_tag = log['opponent'][0]["tag"] if log['opponent'][0]["tag"] != None else ''
+        opponent_mongo_data = list(playersCollection.find({"tag": opponent_tag})),
+        saved = len(opponent_mongo_data[0]) != 0
+        log['team'][0]["mongoId"] = player_id
+        opponent_id = {}
+
+        if not saved:
+            opponent_data = get_player_data(opponent_tag)
+            opponent_id = save_player_data(opponent_data)
+            log['opponent'][0]["mongoId"] = opponent_id
+        else:
+            log['opponent'][0]["mongoId"] = opponent_mongo_data[0][0]["_id"]
+            
         winner = {}
         loser = {}
         if log['team'][0]['crowns'] > log['opponent'][0]['crowns']: 
@@ -103,23 +127,35 @@ def save_battle_logs(battle_logs, player_tag):
         else: 
             winner = log['opponent'][0]
             loser = log['team'][0]
+
         battle_record = {
             'battleTime': log['battleTime'],
             'winner': {
+                "playerId": winner["mongoId"],
                 "tag": winner['tag'],
                 "name": winner['name'],
                 "deck": winner['cards'],
                 "crowns": winner['crowns'],
             },
             'loser': {
+                "playerId": loser["mongoId"],
                 "tag": loser['tag'],
                 "name": loser['name'],
                 "deck": loser['cards'],
                 "crowns": loser['crowns'],
             },
         }
-        collection.update_one({'battleTime': log['battleTime'], 'playerTag': player_tag}, {'$set': battle_record}, upsert=True)
+        collection.update_one({'battleTime': log['battleTime'], 'mainPlayerTag': player_tag}, {'$set': battle_record}, upsert=True)
     logging.debug(f"Saved battle logs for player {player_tag}.")
+
+def dataRemover():
+    
+    players = DB['players']
+    players.delete_many({})
+    battles = DB['battles']
+    battles.delete_many({})
+    logging.debug("Data collection was removed.")
+
 
 if __name__ == '__main__':
     logging.debug("Starting data collection process...")
@@ -137,14 +173,6 @@ if __name__ == '__main__':
         # 'Kings',
     ]
 
-    
-    # players = DB['players']
-    # players.delete_many({})
-    # battles = DB['battles']
-    # battles.delete_many({})
-
-   
-
     for clanName in clans:
         logging.debug(f"----------- Clan {clanName} -----------------")
         clan = get_clan(clanName)
@@ -159,8 +187,8 @@ if __name__ == '__main__':
         
         for player_tag in player_tags:
             player_data = get_player_data(player_tag)
-            save_player_data(player_data)
+            playerId = save_player_data(player_data)
             battle_logs = get_battle_logs(player_tag)
-            save_battle_logs(battle_logs, player_tag)
+            save_battle_logs(battle_logs, player_tag, playerId)
     
     logging.debug("Data collection process completed.")
