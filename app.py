@@ -256,8 +256,6 @@ def losses_with_card_combo(card_combo, start_time, end_time):
 def specific_victories():
     card_name = request.form["card_name_victory"]
     trophy_diff = float(request.form["trophy_diff"])
-    # start_time = request.form["start_time_victory"]
-    # end_time = request.form["end_time_victory"]
     results = specific_victory_conditions(card_name, trophy_diff)
     logging.debug(f"Results: {results}")
     html = json2html.convert(json=results)
@@ -654,11 +652,13 @@ def card_high_win_dif_level_player(card_name, start_time, end_time):
     end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
 
     pipeline = [
+        # Filtra as batalhas pelo periodo
         {
             "$match": {
                 "battleTime": {"$gte": start_iso, "$lt": end_iso},
             },
         },
+        # Obtem as infos do ganhador
         {
             "$lookup": {
                 "from": "players",
@@ -667,6 +667,7 @@ def card_high_win_dif_level_player(card_name, start_time, end_time):
                 "as": "winner_info",
             },
         },
+        # Obtem as infos do perdedor
         {
             "$lookup": {
                 "from": "players",
@@ -675,6 +676,8 @@ def card_high_win_dif_level_player(card_name, start_time, end_time):
                 "as": "loser_info",
             },
         },
+        # projeta os niveis de cada jogador juntamente com campos
+        # que  informam a presença das cartas em seus decks
         {
             "$project": {
                 "winnerLevel": {
@@ -691,6 +694,8 @@ def card_high_win_dif_level_player(card_name, start_time, end_time):
                 },
             },
         },
+        # Cria dois novos campos: win calcula o total de vitorias por nivel
+        # e total games retor o total de jogos com a carta presente
         {
             "$facet": {
                 "win": [
@@ -722,13 +727,16 @@ def card_high_win_dif_level_player(card_name, start_time, end_time):
                 ],
             },
         },
+        # projeta as um array de vitorias e o coampo de total de jogos
         {
             "$project": {
                 "victorys": "$win",
                 "totalBattles": {"$arrayElemAt": ["$totalGames", 0]},
             },
         },
+        # desmenbra os intens de victorys para facilitar o calculo de porcentagem
         {"$unwind": "$victorys"},
+        # projeta o nivel e calcula a taxa de vitoria da carta por nivel
         {
             "$project": {
                 "level": "$victorys.level",
@@ -740,6 +748,7 @@ def card_high_win_dif_level_player(card_name, start_time, end_time):
                 },
             }
         },
+        # ordena decrescente pela taxa de vitoria
         {"$sort": {"winRate": -1}},
     ]
 
