@@ -43,9 +43,6 @@
             <label for="win_percentage" class="componentTitle">Minimum Win Percentage:</label>
             <input type="number" class="selectBox" id="win_percentage" name="win_percentage" required>
 
-
-
-
             <label for="end_time" class="componentTitle">End Date:</label>
 
 
@@ -71,7 +68,7 @@
 
         <div class="component-container">
             <label for="combo" class="componentTitle">Card Combo (comma separated):</label>
-            <input type="text" class="selectBox" id="combo" name="combo" required>
+            <input type="text" class="selectBox" id="combo" name="combo" required value="Mortar,Knight">
 
             <label for="start_time_combo" class="componentTitle">Start Date:</label>
             <input type="date" id="start_time_combo" class="selectBox" name="start_time_combo" required
@@ -128,6 +125,53 @@
             <label for="end_time_combo" class="componentTitle">End Date:</label>
             <input type="date" id="end_time_combo" class="selectBox" name="end_time_combo" required
                 value="{{battle_dates[1]}}">
+
+            <div class="buttonContainer">
+                <button class="searchButton" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <form action="/card_win_after_update" method="post">
+        <h2 class="queryTitle">Query 6: Victory Percentage Using Card After and Before Update</h2>
+        <hr class="divider">
+
+        <div class="component-container">
+            <label class="componentTitle" for="card_name">Card Name:</label>
+
+            <select id="card_name" class="selectBox" name="card_name" required>
+                {% for card_name in card_names %}
+                <option value="{{ card_name }}">{{ card_name }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="update_time" class="componentTitle">Update Date:</label>
+            <input type="date" id="update_time" class="selectBox" name="update_time" value="{{battle_dates[0]}}"
+                required>
+
+            <div class="buttonContainer">
+                <button class="searchButton" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <form action="/cards_high_win_less_used" method="post">
+        <h2 class="queryTitle">Query 7: High Win Cards With Less Usage</h2>
+        <hr class="divider">
+
+        <div class="component-container">
+
+            <label for="win_percentage" class="componentTitle">Minimum Win Percentage:</label>
+            <input type="number" class="selectBox" id="win_percentage" name="win_percentage" required>
+
+            <label for="usage_percentage" class="componentTitle">Max Usage Percentage:</label>
+            <input type="number" class="selectBox" id="usage_percentage" name="usage_percentage" required>
+
+            <label for="start_time" class="componentTitle">Start Date:</label>
+            <input type="date" id="start_time" class="selectBox" name="start_time" value="{{battle_dates[0]}}" required>
+
+            <label for="end_time" class="componentTitle">End Date:</label>
+            <input type="date" id="end_time" class="selectBox" value="{{battle_dates[1]}}" name="end_time" required>
 
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
