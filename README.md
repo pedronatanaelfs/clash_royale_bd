@@ -34,6 +34,7 @@ This project aims to store and analyze battle data from the game Clash Royale in
 4. **Set up environment variables:**
     - Create a `.env` file in the root of your project directory and add your MongoDB URI:
     ```plaintext
+    API_KEY="YOUR KEY"
     MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/clash_royale?retryWrites=true&w=majority
     ```
 
