@@ -161,10 +161,10 @@ if __name__ == '__main__':
     logging.debug("Starting data collection process...")
 
     clans = [
-        'WHAM! RO',
+        # 'WHAM! RO',
         # 'La Eza',
         # 'SAF GÜÇ',
-        # 'おと姫',
+        'おと姫',
         # 'Tigers BR',
         # 'Nova I',
         # 'INTZ',
