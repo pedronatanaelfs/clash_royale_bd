@@ -11,7 +11,8 @@
 <body>
     <h1 class="projectTitle">Clash Royale Analysis</h1>
     <form action="/victory_percentage" method="post">
-        <h2 class="queryTitle">Query 1: Victory and Defeat Percentage Using Card</h2>
+        <h2 class="queryTitle">Query 1: Calcule a porcentagem de vitórias e derrotas utilizando a carta X
+            (parâmetro) ocorridas em um intervalo de timestamps (parâmetro).</h2>
         <hr class="divider">
 
         <div class="component-container">
@@ -36,18 +37,20 @@
     </form>
 
     <form action="/high_win_decks" method="post">
-        <div class="queryTitle">Query 2: Decks with High Win Percentage</div>
+        <div class="queryTitle">Query 2: Liste os decks completos que produziram mais de X% (parâmetro) de
+            vitórias ocorridas em um intervalo de timestamp (parâmetro).
+        </div>
         <hr class="divider">
 
         <div class="component-container">
             <label for="win_percentage" class="componentTitle">Minimum Win Percentage:</label>
             <input type="number" class="selectBox" id="win_percentage" name="win_percentage" required>
 
+            <label for="limit" class="componentTitle">Limit:</label>
+            <input type="number" class="selectBox" id="limit" name="limit" required value="30">
 
-
-
-            <label for="end_time" class="componentTitle">End Date:</label>
-
+            <label for="offset" class="componentTitle">Offset:</label>
+            <input type="number" class="selectBox" id="offset" name="offset" required value="0">
 
             <label for="start_time_deck" class="componentTitle">Start Date:</label>
             <input type="date" id="start_time_deck" class="selectBox" name="start_time_deck" required
@@ -66,12 +69,14 @@
 
 
     <form action="/defeats_with_combo" method="post">
-        <h2 class="queryTitle">Query 3: Defeats Using Card Combo</h2>
+        <h2 class="queryTitle">Query 3: Calcule a quantidade de derrotas utilizando o combo de cartas
+            (X1,X2, ...) (parâmetro) ocorridas em um intervalo de timestamps
+            (parâmetro).</h2>
         <hr class="divider">
 
         <div class="component-container">
             <label for="combo" class="componentTitle">Card Combo (comma separated):</label>
-            <input type="text" class="selectBox" id="combo" name="combo" required>
+            <input type="text" class="selectBox" id="combo" name="combo" required value="Mortar,Knight">
 
             <label for="start_time_combo" class="componentTitle">Start Date:</label>
             <input type="date" id="start_time_combo" class="selectBox" name="start_time_combo" required
@@ -88,7 +93,10 @@
     </form>
 
     <form action="/specific_victories" method="post">
-        <h2 class="queryTitle">Query 4: Specific Victory Conditions</h2>
+        <h2 class="queryTitle">Query 4: Calcule a quantidade de vitórias envolvendo a carta X (parâmetro) nos
+            casos em que o vencedor possui Z% (parâmetro) menos troféus do que
+            o perdedor, a partida durou menos de 2 minutos, e o perdedor derrubou ao menos
+            duas torres do adversário.</h2>
         <hr class="divider">
 
         <div class="component-container">
@@ -100,7 +108,7 @@
             </select>
 
             <label for="trophy_diff" class="componentTitle">Trophy Difference Percentage:</label>
-            <input type="number" class="selectBox" id="trophy_diff" name="trophy_diff" required>
+            <input type="number" class="selectBox" id="trophy_diff" name="trophy_diff" required value="4">
 
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>
@@ -110,15 +118,18 @@
 
 
     <form action="/high_win_combos" method="post">
-        <h2 class="queryTitle">Query 5: Card Combos with High Win Percentage</h2>
+        <h2 class="queryTitle">Query 5: Liste o combo de cartas (eg: carta 1, carta 2, carta 3... carta n) de
+            tamanho N (parâmetro) que produziram mais de Y% (parâmetro) de vitórias ocorridas em um intervalo de
+            timestamp (parâmetro) </h2>
         <hr class="divider">
 
         <div class="component-container">
             <label for="combo_size" class="componentTitle">Combo Size:</label>
-            <input type="number" class="selectBox" id="combo_size" name="combo_size" required>
+            <input type="number" class="selectBox" id="combo_size" name="combo_size" required value="2">
 
             <label for="win_percentage_combo" class="componentTitle">Minimum Win Percentage:</label>
-            <input type="number" class="selectBox" id="win_percentage_combo" name="win_percentage_combo" required>
+            <input type="number" class="selectBox" id="win_percentage_combo" name="win_percentage_combo" required
+                value="1">
 
             <label for="start_time_combo" class="componentTitle">Start Date:</label>
             <input type="date" id="start_time_combo" class="selectBox" name="start_time_combo" required
@@ -128,6 +139,81 @@
             <label for="end_time_combo" class="componentTitle">End Date:</label>
             <input type="date" id="end_time_combo" class="selectBox" name="end_time_combo" required
                 value="{{battle_dates[1]}}">
+
+            <div class="buttonContainer">
+                <button class="searchButton" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <form action="/card_win_after_update" method="post">
+        <h2 class="queryTitle">Query 6: Calcule a mudança na taxa de vitória de uma carta específica (parâmetro) antes
+            e depois da data (parâmetro) referente ao dia de sua atualizaçao</h2>
+        <hr class="divider">
+
+        <div class="component-container">
+            <label class="componentTitle" for="card_name">Card Name:</label>
+
+            <select id="card_name" class="selectBox" name="card_name" required>
+                {% for card_name in card_names %}
+                <option value="{{ card_name }}">{{ card_name }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="update_time" class="componentTitle">Update Date:</label>
+            <input type="date" id="update_time" class="selectBox" name="update_time" value="{{battle_dates[0]}}"
+                required>
+
+            <div class="buttonContainer">
+                <button class="searchButton" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <form action="/cards_high_win_less_used" method="post">
+        <h2 class="queryTitle">Query 7: Listar cartas que têm uma taxa de vitória alta (acima de X%, parâmetro) mas são
+            usadas em menos de Y% (parâmetro) das batalhas em um intervalo de timestamps (parâmetro).</h2>
+        <hr class="divider">
+
+        <div class="component-container">
+
+            <label for="win_percentage" class="componentTitle">Minimum Win Percentage:</label>
+            <input type="number" class="selectBox" id="win_percentage" name="win_percentage" required value="30">
+
+            <label for="usage_percentage" class="componentTitle">Max Usage Percentage:</label>
+            <input type="number" class="selectBox" id="usage_percentage" name="usage_percentage" required value="20">
+
+            <label for="start_time" class="componentTitle">Start Date:</label>
+            <input type="date" id="start_time" class="selectBox" name="start_time" value="{{battle_dates[0]}}" required>
+
+            <label for="end_time" class="componentTitle">End Date:</label>
+            <input type="date" id="end_time" class="selectBox" value="{{battle_dates[1]}}" name="end_time" required>
+
+            <div class="buttonContainer">
+                <button class="searchButton" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+    <form action="/card_high_win_dif_level_player" method="post">
+        <h2 class="queryTitle">Query 8: Calcular a taxa de vitória de uma carta específica (parâmetro) para jogadores de
+            diferentes níveis em um intervalo de timestamps (parâmetro).</h2>
+        <hr class="divider">
+
+        <div class="component-container">
+
+            <label class="componentTitle" for="card_name">Card Name:</label>
+
+            <select id="card_name" class="selectBox" name="card_name" required>
+                {% for card_name in card_names %}
+                <option value="{{ card_name }}">{{ card_name }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="start_time" class="componentTitle">Start Date:</label>
+            <input type="date" id="start_time" class="selectBox" name="start_time" value="{{battle_dates[0]}}" required>
+
+            <label for="end_time" class="componentTitle">End Date:</label>
+            <input type="date" id="end_time" class="selectBox" value="{{battle_dates[1]}}" name="end_time" required>
 
             <div class="buttonContainer">
                 <button class="searchButton" type="submit">Search</button>

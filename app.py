@@ -106,15 +106,21 @@ def victory_percentage_with_card(card_name, start_time, end_time):
 @app.route("/high_win_decks", methods=["POST"])
 def high_win_decks():
     win_percentage = float(request.form["win_percentage"])
+    limit = float(request.form["limit"])
+    offset = float(request.form["offset"])
     start_time = request.form["start_time_deck"]
     end_time = request.form["end_time_deck"]
-    results = decks_with_high_win_percentage(win_percentage, start_time, end_time)
+    results = decks_with_high_win_percentage(
+        win_percentage, start_time, end_time, limit, offset
+    )
     logging.debug(f"Results: {results}")
     html = json2html.convert(json=results)
     return render_template("results.html", results=html)
 
 
-def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
+def decks_with_high_win_percentage(
+    min_win_percentage, start_time, end_time, limit, offset
+):
     logging.debug(
         f"Querying for decks with at least {min_win_percentage}% wins, from {start_time} to {end_time}"
     )
@@ -123,10 +129,11 @@ def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
     end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
 
     pipeline = [
-        # Filtra pelo periodo da batalha
+        # Filtra pelo periodo da batalha e extrai apenas os decks completos
         {
             "$match": {
                 "battleTime": {"$gte": start_iso, "$lt": end_iso},
+                "winner.deck": {"$size": 8},
             },
         },
         # Extrai o deck do vencedor e marca cada entrada como uma vitoria
@@ -187,7 +194,8 @@ def decks_with_high_win_percentage(min_win_percentage, start_time, end_time):
         },
         # Filtra os decks que tem uma taxa de vitoria superior ao limite informado
         {"$match": {"winPercentage": {"$gt": min_win_percentage}}},
-        # Ordena os decks na ordem decrescente de vitoria
+        {"$skip": offset},
+        {"$limit": limit},
         {"$sort": {"winPercentage": -1}},
     ]
 
@@ -248,23 +256,18 @@ def losses_with_card_combo(card_combo, start_time, end_time):
 def specific_victories():
     card_name = request.form["card_name_victory"]
     trophy_diff = float(request.form["trophy_diff"])
-    start_time = request.form["start_time_victory"]
-    end_time = request.form["end_time_victory"]
-    results = specific_victory_conditions(card_name, trophy_diff, start_time, end_time)
+    # start_time = request.form["start_time_victory"]
+    # end_time = request.form["end_time_victory"]
+    results = specific_victory_conditions(card_name, trophy_diff)
     logging.debug(f"Results: {results}")
     html = json2html.convert(json=results)
     return render_template("results.html", results=html)
 
 
-def specific_victory_conditions(
-    card_name, trophy_difference_percentage, start_time, end_time
-):
+def specific_victory_conditions(card_name, trophy_difference_percentage):
     logging.debug(
-        f"Querying for specific victories with card {card_name}, trophy diff {trophy_difference_percentage}%, from {start_time} to {end_time}"
+        f"Querying for specific victories with card {card_name}, trophy diff {trophy_difference_percentage}%"
     )
-
-    start_iso = datetime.strptime(start_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
-    end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
 
     pipeline = [
         # Filtra batalhas on o perdedor derrubou, no minimo, 2 torres
@@ -372,6 +375,10 @@ def card_combos_with_high_win_percentage(
     start_iso = datetime.strptime(start_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
     end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
 
+    totalGames = DB["battles"].count_documents(
+        {"battleTime": {"$gte": start_iso, "$lt": end_iso}}
+    )
+
     pipeline = [
         # Filtra pelo periodo da batalha
         {
@@ -393,21 +400,6 @@ def card_combos_with_high_win_percentage(
         {
             "$group": {"_id": "$cardCombos", "totalWins": {"$sum": 1}},
         },
-        # join na collection original para obter a qtd de batalhas totais
-        {
-            "$lookup": {
-                "from": "battles",
-                "pipeline": [
-                    {
-                        "$match": {
-                            "battleTime": {"$gte": start_iso, "$lt": end_iso},
-                        }
-                    },
-                    {"$count": "totalGames"},
-                ],
-                "as": "gameStats",
-            }
-        },
         # Calcula a taxa de ganho do combo em relacao ao total de batalhas
         {
             "$project": {
@@ -415,17 +407,7 @@ def card_combos_with_high_win_percentage(
                 "combo": "$_id",
                 "winRate": {
                     "$multiply": [
-                        {
-                            "$divide": [
-                                "$totalWins",
-                                {
-                                    "$ifNull": [
-                                        {"$arrayElemAt": ["$gameStats.totalGames", 0]},
-                                        1,
-                                    ]
-                                },
-                            ]
-                        },
+                        {"$divide": ["$totalWins", {"$ifNull": [totalGames, 1]}]},
                         100,
                     ]
                 },
@@ -434,6 +416,330 @@ def card_combos_with_high_win_percentage(
         # Filtra os resultados para incluir apenas aqueles com uma taxa de vitória superior a informada
         {"$match": {"winRate": {"$gt": min_win_percentage}}},
         # Organiza a resposta em ordem Descrescente
+        {"$sort": {"winRate": -1}},
+    ]
+
+    results = list(DB["battles"].aggregate(pipeline))
+    logging.debug(f"Pipeline results: {results}")
+    return results
+
+
+@app.route("/card_win_after_update", methods=["POST"])
+def card_win_after_update():
+
+    card_name = request.form["card_name"]
+    update_time = request.form["update_time"]
+    results = card_win_rate_after_before_time(card_name, update_time)
+    logging.debug(f"Results: {results}")
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
+
+
+def card_win_rate_after_before_time(card_name, update_time):
+    logging.debug(f"Querying for cards win dif after updates")
+
+    update_iso = datetime.strptime(update_time, "%Y-%m-%d").strftime(
+        "%Y%m%dT%H%M%S.000Z"
+    )
+
+    pipeline = [
+        # Busca batalhas em que a carta especifica participou
+        {
+            "$match": {
+                "$or": [{"winner.deck.name": card_name}, {"loser.deck.name": card_name}]
+            }
+        },
+        # Projeta os campos que informa se a carta esta no lado vencedor.
+        # cria tambem o campo mostrando se a batalha foi antes ou depois da data de update
+        {
+            "$project": {
+                "cardInWinnerDeck": {"$in": [card_name, "$winner.deck.name"]},
+                "isBeforeUpdate": {"$lt": ["$battleTime", update_iso]},
+            }
+        },
+        # Divide os dados em dois grupos baseados no momento da batalha
+        {
+            "$facet": {
+                # Soma as vitorias e conta os jogos totais antes do update
+                "beforeUpdate": [
+                    {"$match": {"isBeforeUpdate": True}},
+                    {
+                        "$group": {
+                            "_id": None,
+                            "totalWins": {
+                                "$sum": {"$cond": ["$cardInWinnerDeck", 1, 0]}
+                            },
+                            "totalGames": {"$sum": 1},
+                        }
+                    },
+                ],
+                # Soma as vitorias e conta os jogos totais depois do update
+                "afterUpdate": [
+                    {"$match": {"isBeforeUpdate": False}},
+                    {
+                        "$group": {
+                            "_id": None,
+                            "totalWins": {
+                                "$sum": {"$cond": ["$cardInWinnerDeck", 1, 0]}
+                            },
+                            "totalGames": {"$sum": 1},
+                        }
+                    },
+                ],
+            }
+        },
+        # Projeta os resultados de vitoria de cada periodo
+        {
+            "$project": {
+                "beforeUpdate": {"$arrayElemAt": ["$beforeUpdate", 0]},
+                "afterUpdate": {"$arrayElemAt": ["$afterUpdate", 0]},
+            }
+        },
+        # Projeta o calculo das taxas de vitoria antes e depois do update
+        {
+            "$project": {
+                "beforeWinRate": {
+                    "$ifNull": [
+                        {
+                            "$multiply": [
+                                {
+                                    "$divide": [
+                                        "$beforeUpdate.totalWins",
+                                        "$beforeUpdate.totalGames",
+                                    ]
+                                },
+                                100,
+                            ]
+                        },
+                        0,
+                    ]
+                },
+                "afterWinRate": {
+                    "$ifNull": [
+                        {
+                            "$multiply": [
+                                {
+                                    "$divide": [
+                                        "$afterUpdate.totalWins",
+                                        "$afterUpdate.totalGames",
+                                    ]
+                                },
+                                100,
+                            ]
+                        },
+                        0,
+                    ]
+                },
+            }
+        },
+    ]
+
+    results = list(DB["battles"].aggregate(pipeline))
+    print(results)
+    logging.debug(f"Pipeline results: {results}")
+    return results
+
+
+@app.route("/cards_high_win_less_used", methods=["POST"])
+def cards_high_win_less_used():
+
+    win_percentage = float(request.form["win_percentage"])
+    usage_percentage = float(request.form["usage_percentage"])
+    start_time = request.form["start_time"]
+    end_time = request.form["end_time"]
+    results = cards_win_rate_usage_rate(
+        win_percentage, usage_percentage, start_time, end_time
+    )
+    logging.debug(f"Results: {results}")
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
+
+
+def cards_win_rate_usage_rate(win_percentage, usage_percentage, start_time, end_time):
+
+    logging.debug(f"Querying for cards win rate and usage rate")
+
+    start_iso = datetime.strptime(start_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
+    end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
+
+    # obtem a quantidade total de batalhas
+    totalBattles = DB["battles"].count_documents({})
+
+    pipeline = [
+        # Filtra as batalhas pelo periodo
+        {
+            "$match": {
+                "battleTime": {"$gte": start_iso, "$lte": end_iso},
+            },
+        },
+        # Projeta campo com todas as cartas e outro campos so com as cartas do vencedor
+        {
+            "$project": {
+                "allCards": {
+                    "$setUnion": ["$winner.deck.name", "$loser.deck.name"],
+                },
+                "winnerCards": "$winner.deck.name",
+            },
+        },
+        # Destrincha o array allCards para tratar cada carta separadamente
+        {
+            "$unwind": "$allCards",
+        },
+        # Projeta a carta em questao e se ela faz parte do deck vencedor
+        {
+            "$project": {
+                "_id": "$allCards",
+                "winnerHasCard": {"$in": ["$allCards", "$winnerCards"]},
+            },
+        },
+        # agrupa a resposta por carta em questao e seus totais de uso e vitoria
+        {
+            "$group": {
+                "_id": "$_id",
+                "totalWins": {"$sum": {"$cond": ["$winnerHasCard", 1, 0]}},
+                "totalUses": {"$sum": 1},
+            },
+        },
+        # Projeta a resposta final calculando as taxas de acordo com a carta em questao
+        {
+            "$project": {
+                "_id": 0,
+                "card": "$_id",
+                "winRate": {
+                    "$multiply": [{"$divide": ["$totalWins", "$totalUses"]}, 100],
+                },
+                "usageRate": {
+                    "$multiply": [
+                        {"$divide": ["$totalUses", totalBattles]},
+                        100,
+                    ],
+                },
+            },
+        },
+        # Filtra a resposta de acordo com os parametros
+        {
+            "$match": {
+                "winRate": {"$gt": win_percentage},
+                "usageRate": {"$lt": usage_percentage},
+            }
+        },
+        # ordena a resposta de acodo com o winRate decrescente
+        {
+            "$sort": {"winRate": -1},
+        },
+    ]
+
+    results = list(DB["battles"].aggregate(pipeline))
+    print(results)
+    logging.debug(f"Pipeline results: {results}")
+    return results
+
+
+@app.route("/card_high_win_dif_level_player", methods=["POST"])
+def card_win_level_player():
+
+    card_name = request.form["card_name"]
+    start_time = request.form["start_time"]
+    end_time = request.form["end_time"]
+    results = card_high_win_dif_level_player(card_name, start_time, end_time)
+    logging.debug(f"Results: {results}")
+    html = json2html.convert(json=results)
+    return render_template("results.html", results=html)
+
+
+def card_high_win_dif_level_player(card_name, start_time, end_time):
+    logging.debug(f"Querying for high win cards rate for dif level players")
+
+    start_iso = datetime.strptime(start_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
+    end_iso = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%dT%H%M%S.000Z")
+
+    pipeline = [
+        {
+            "$match": {
+                "battleTime": {"$gte": start_iso, "$lt": end_iso},
+            },
+        },
+        {
+            "$lookup": {
+                "from": "players",
+                "localField": "winner.tag",
+                "foreignField": "tag",
+                "as": "winner_info",
+            },
+        },
+        {
+            "$lookup": {
+                "from": "players",
+                "localField": "loser.tag",
+                "foreignField": "tag",
+                "as": "loser_info",
+            },
+        },
+        {
+            "$project": {
+                "winnerLevel": {
+                    "$arrayElemAt": ["$winner_info.expLevel", 0],
+                },
+                "loserLevel": {
+                    "$arrayElemAt": ["$loser_info.expLevel", 0],
+                },
+                "cardInWinnerDeck": {
+                    "$in": [card_name, "$winner.deck.name"],
+                },
+                "cardInLoserDeck": {
+                    "$in": [card_name, "$loser.deck.name"],
+                },
+            },
+        },
+        {
+            "$facet": {
+                "win": [
+                    {
+                        "$match": {"cardInWinnerDeck": True},
+                    },
+                    {
+                        "$group": {"_id": "$winnerLevel", "totalWin": {"$sum": 1}},
+                    },
+                    {"$project": {"_id": 0, "totalWin": 1, "level": "$_id"}},
+                ],
+                "totalGames": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$or": [
+                                    {"$eq": ["$cardInLoserDeck", True]},
+                                    {"$eq": ["$cardInWinnerDeck", True]},
+                                ],
+                            },
+                        },
+                    },
+                    {
+                        "$group": {"_id": None, "total": {"$sum": 1}},
+                    },
+                    {
+                        "$project": {"_id": 0, "total": 1},
+                    },
+                ],
+            },
+        },
+        {
+            "$project": {
+                "victorys": "$win",
+                "totalBattles": {"$arrayElemAt": ["$totalGames", 0]},
+            },
+        },
+        {"$unwind": "$victorys"},
+        {
+            "$project": {
+                "level": "$victorys.level",
+                "winRate": {
+                    "$multiply": [
+                        {"$divide": ["$victorys.totalWin", "$totalBattles.total"]},
+                        100,
+                    ]
+                },
+            }
+        },
         {"$sort": {"winRate": -1}},
     ]
 
