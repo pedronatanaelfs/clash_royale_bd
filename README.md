@@ -5,7 +5,7 @@ This project aims to store and analyze battle data from the game Clash Royale in
 
 ## Project Setup
 
-### Prerequisites
+### Requirements
 
 - Python 3.10
 - Anaconda
