@@ -28,7 +28,7 @@ This project aims to store and analyze battle data from the game Clash Royale in
 
 3. **Install the required packages:**
     ```bash
-    pip install pymongo flask python-dotenv
+    pip install -r requirements.txt
     ```
 
 4. **Set up environment variables:**
